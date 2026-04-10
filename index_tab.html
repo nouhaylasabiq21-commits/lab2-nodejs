@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard météo</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Verdana, sans-serif;
+      background: #121212;
+      color: #ffffff;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ff4d4d;
+      margin-bottom: 20px;
+    }
+
+    /* ===== BOUTONS ===== */
+    .top-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #pauseBtn {
+      background: #ff4d4d;
+      color: white;
+    }
+
+    #resetBtn {
+      background: #444;
+      color: white;
+    }
+
+    #status {
+      text-align: center;
+      margin-bottom: 15px;
+      color: #bbb;
+    }
+
+    /* ===== LAYOUT ===== */
+    .container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    /* ===== TABLEAU ===== */
+    .table-container {
+      flex: 1;
+      min-width: 320px;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: #ff4d4d;
+    }
+
+    th {
+      color: white;
+      padding: 14px;
+      text-align: left;
+    }
+
+    td {
+      padding: 14px;
+      border-bottom: 1px solid #333;
+      color: #f5f5f5;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #262626;
+    }
+
+    tbody tr:nth-child(odd) {
+      background: #1a1a1a;
+    }
+
+    tbody tr:hover {
+      background: #333;
+    }
+
+    /* ===== GRAPHIQUES ===== */
+    .charts-container {
+      flex: 2;
+      min-width: 400px;
+    }
+
+    .chart-box {
+      background: #1e1e1e;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🌡️ Dashboard météo temps réel</h1>
+
+<div class="top-bar">
+  <button id="pauseBtn">Pause</button>
+  <button id="resetBtn">Reset</button>
+</div>
+
+<div id="status">Connexion en cours...</div>
+
+<div class="container">
+
+  <!-- TABLEAU -->
+  <div class="table-container">
+    <table id="myTable">
+      <thead>
+        <tr>
+          <th>Mois</th>
+          <th>Max./Min. (°C)</th>
+          <th>Pluie</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- GRAPHIQUES -->
+  <div class="charts-container">
+
+    <div class="chart-box">
+      <canvas id="myChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+      <canvas id="myChart1"></canvas>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+
+<script>
+  var mois_tab = [];
+  var max_tab = [];
+  var min_tab = [];
+  var pluie_tab = [];
+
+  var isPaused = false;
+
+  var statusDiv = document.getElementById("status");
+
+  // ===== GRAPH TEMP =====
+  var ctxTemp = document.getElementById("myChart").getContext("2d");
+  var chartTemp = new Chart(ctxTemp, {
+    type: "line",
+    data: {
+      labels: mois_tab,
+      datasets: [
+        {
+          label: "Max",
+          data: max_tab,
+          borderColor: "#ff4d4d",
+          fill: false
+        },
+        {
+          label: "Min",
+          data: min_tab,
+          borderColor: "#ff9999",
+          fill: false
+        }
+      ]
+    },
+    options: {
+      legend: { labels: { fontColor: "#fff" }},
+      scales: {
+        xAxes: [{ ticks: { fontColor: "#fff" }}],
+        yAxes: [{ ticks: { beginAtZero: true, fontColor: "#fff" }}]
+      }
+    }
+  });
+
+  // ===== GRAPH PLUIE =====
+  var ctxPluie = document.getElementById("myChart1").getContext("2d");
+  var chartPluie = new Chart(ctxPluie, {
+    type: "bar",
+    data: {
+      labels: mois_tab,
+      datasets: [{
+        label: "Pluie",
+        data: pluie_tab,
+        backgroundColor: "#ff4d4d"
+      }]
+    },
+    options: {
+      legend: { labels: { fontColor: "#fff" }},
+      scales: {
+        xAxes: [{ ticks: { fontColor: "#fff" }}],
+        yAxes: [{ ticks: { beginAtZero: true, fontColor: "#fff" }}]
+      }
+    }
+  });
+
+  // ===== WEBSOCKET =====
+  var ws = new WebSocket("ws://localhost:5002");
+
+  ws.onopen = function () {
+    statusDiv.textContent = "Connecté";
+  };
+
+  ws.onmessage = function (evt) {
+
+    if (isPaused) return;
+
+    var tab = JSON.parse(evt.data);
+
+    mois_tab.push(tab.mois);
+    max_tab.push(Number(tab.tmax));
+    min_tab.push(Number(tab.tmin));
+    pluie_tab.push(Number(tab.pluie));
+
+    var row =
+      "<tr>" +
+      "<td>" + tab.mois + "</td>" +
+      "<td>" + tab.tmax + "° / " + tab.tmin + "°</td>" +
+      "<td>" + tab.pluie + " jours</td>" +
+      "</tr>";
+
+    $("#myTable tbody").append(row);
+
+    chartTemp.update();
+    chartPluie.update();
+  };
+
+  // ===== BOUTON PAUSE =====
+  document.getElementById("pauseBtn").onclick = function () {
+    isPaused = !isPaused;
+
+    if (isPaused) {
+      this.textContent = "Reprendre";
+      statusDiv.textContent = "Pause activée";
+    } else {
+      this.textContent = "Pause";
+      statusDiv.textContent = "Reprise";
+    }
+  };
+
+  // ===== RESET =====
+  document.getElementById("resetBtn").onclick = function () {
+
+    mois_tab.length = 0;
+    max_tab.length = 0;
+    min_tab.length = 0;
+    pluie_tab.length = 0;
+
+    $("#myTable tbody").html("");
+
+    chartTemp.update();
+    chartPluie.update();
+
+    statusDiv.textContent = "Reset effectué";
+  };
+</script>
+
+</body>
+</html>
