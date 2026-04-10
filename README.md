@@ -1,11 +1,11 @@
-🌡️ Dashboard météo temps réel
-📖 Description
+##🌡️ Dashboard météo temps réel
+##📖 Description
 
 Application web en temps réel permettant d’afficher des données météorologiques (température et pluie) à partir d’un fichier CSV.
 
 Les données sont envoyées progressivement via WebSocket et mises à jour dynamiquement dans un tableau et des graphiques.
 
-🚀 Fonctionnalités
+##🚀 Fonctionnalités
 📡 Transmission des données en temps réel (WebSocket)
 📊 Graphiques dynamiques (températures et pluie)
 📋 Tableau mis à jour automatiquement
@@ -18,7 +18,7 @@ WebSocket (ws)
 CSV → JSON (csvtojson)
 Chart.js
 JavaScript / HTML / CSS
-▶️ Démo
+## ▶️ Démo
 
 Une démonstration montre :
 
@@ -29,7 +29,7 @@ l’utilisation des boutons (Pause / Reset)
 https://github.com/user-attachments/assets/a7e72232-0e44-48ed-8ae0-533bedfc37ca
 
 
-🎯 Objectif
+## 🎯 Objectif
 
 Ce projet permet de comprendre :
 
