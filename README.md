@@ -26,7 +26,8 @@ l’arrivée des données toutes les 3 secondes
 la mise à jour des graphiques
 l’utilisation des boutons (Pause / Reset)
 
-https://github.com/user-attachments/assets/d81843d1-75d9-4347-b992-5e9700a22cf8
+https://github.com/user-attachments/assets/a7e72232-0e44-48ed-8ae0-533bedfc37ca
+
 
 🎯 Objectif
 
